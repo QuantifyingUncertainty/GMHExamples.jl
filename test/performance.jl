@@ -1,4 +1,7 @@
-performancetests = []
+include("util.jl")
+
+performancetests = [
+  "photoreceptor"]
 
 println("==========================")
 println("Running performance tests:")
@@ -8,6 +11,8 @@ for t in performancetests
   tfile = t*".jl"
   println("  * $(tfile) *")
   include(string("performance/",tfile))
+  println()
+  println()
 end
 
 

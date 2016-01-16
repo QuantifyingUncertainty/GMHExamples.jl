@@ -1,4 +1,7 @@
-unittests = []
+include("util.jl")
+
+unittests = [
+  "photoreceptor"]
 
 println("===================")
 println("Running unit tests:")
