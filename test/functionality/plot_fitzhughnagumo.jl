@@ -25,7 +25,7 @@ function pyplot_fhn()
   timepoints,measurements = GMHExamples.fitzhughnagumodata()
 
   #plot the data
-  fig = PyPlot.figure()
+  fig = PyPlot.figure("functionality/fitzhughnagumo")
   PyPlot.plot(timepoints,measurements[:,1];label="Membrane Potential")
   PyPlot.plot(timepoints,measurements[:,2];label="Recovery Variable")
   PyPlot.xlabel("Time")

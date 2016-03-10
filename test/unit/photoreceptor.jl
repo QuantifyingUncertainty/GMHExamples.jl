@@ -173,14 +173,8 @@ srand(467) ; GMHExamples.randlognormal!(latvals,2.5f0,0.5f0) ; GMHExamples.randl
 @test GMHExamples._bumpvals(traittype(m1.policy.bump),m1,zeros(4)) == m1.fixedbumpvals
 @test isempty(m2.fixedbumpvals) && GMHExamples._bumpvals(traittype(m2.policy.bump),m2,ones(7)) == bump(1.0f0,1.0f0,1.0f0,0.025f0)
 
-GMHExamples._setval!(m1.filteredphotons,1)
-GMHExamples._setval!(m1.refractimes,2)
 GMHExamples._setval!(m1.lightinducedcurrent,3.0f0)
-
 GMHExamples._resettemp(m1)
-
-@test m1.filteredphotons == zeros(m1.filteredphotons)
-@test m1.refractimes == zeros(m1.refractimes)
 @test m1.lightinducedcurrent == zeros(m1.lightinducedcurrent)
 
 evaluate!(m1,zeros(4))

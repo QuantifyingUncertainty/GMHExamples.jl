@@ -7,7 +7,7 @@ import JLD
 import Distributions
 
 import Base: show
-import GeneralizedMetropolisHastings: _trait,_policy,_parameters,_model,evaluate!
+import GeneralizedMetropolisHastings: _trait,_policy,_parameters,_model,evaluate!,dataindex,measurements,noisemodel
 
 export
     AbstractPhotoReceptor,PhotoReceptorModel,

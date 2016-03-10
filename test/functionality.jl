@@ -1,9 +1,10 @@
 include("util.jl")
 
 functionalitytests = [
-  "plot_springmass",
-  "plot_fitzhughnagumo",
-  "plot_photoreceptor"
+    "photoreceptor",
+    "plot_springmass",
+    "plot_fitzhughnagumo",
+    "plot_photoreceptor"
   ]
 
 println("============================")

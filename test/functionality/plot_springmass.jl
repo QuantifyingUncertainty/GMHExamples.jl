@@ -25,7 +25,7 @@ function pyplot_springmass(timepoints,y0,paras,noisevar)
     measurements = GMHExamples.springmassnoisy(GeneralizedMetropolisHastings.noise(:gaussian,noisevar),timepoints,y0,paras)
 
     #plot the data
-    fig = PyPlot.figure()
+    fig = PyPlot.figure("functionality/springmass")
     PyPlot.plot(timepoints,measurements[:,1];label="Position")
     PyPlot.plot(timepoints,measurements[:,2];label="Velocity")
     PyPlot.xlabel("Time")

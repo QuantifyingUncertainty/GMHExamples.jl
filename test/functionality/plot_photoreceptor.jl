@@ -11,11 +11,11 @@ function pyplot_photonsequence()
 
     #calculate the data
     photons = GMHExamples.photonsequence(10:100,1000)
-    timepoints = 1.0:length(photons)
+    timepoints = dataindex(photons)
 
     #plot the data
-    fig = PyPlot.figure("Photon Sequence")
-    PyPlot.plot(timepoints/1000.0,photons)
+    fig = PyPlot.figure("functionality/photoreceptor")
+    PyPlot.plot(timepoints,datavalues(photons))
     PyPlot.xlabel("Time (s)")
     PyPlot.ylabel("Photons")
     PyPlot.title("Photon Sequence")
@@ -28,10 +28,10 @@ end
 function pyplot_bump(timepoints,amplitude = 4.0,shape = 3.0,scale = 2.5)
 
     #calculate the data
-    bmp = GMHExamples.bump(timepoints,amplitude,shape,scale)
+    bmp = GMHExamples.bump(collect(timepoints),amplitude,shape,scale)
 
     #plot the data
-    fig = PyPlot.figure("Bump")
+    fig = PyPlot.figure("functionality/bump")
     PyPlot.plot(timepoints/1000.0,bmp)
     PyPlot.xlabel("Time (s)")
     PyPlot.ylabel("Current (nA)")

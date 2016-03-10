@@ -11,14 +11,13 @@ immutable PhotoReceptorModel{P<:AbstractParameter} <: AbstractModel
     policy::PhotoReceptorPolicy
     receptor::AbstractPhotoReceptor
 
+    ###variable holding the result of a model evaluation
+    lightinducedcurrent::Vector{Float32}
+
     ###temp location to store model data
     fixedbumpvals::Vector{Float32}
     latency::Vector{Float32}
     refractory::Vector{Float32}
-
-    filteredphotons::Vector{Int}
-    refractimes::Vector{Int}
-    lightinducedcurrent::Vector{Float32}
 
     ###Inner constructor
     function PhotoReceptorModel(parameters::Vector{P},photons::DataArray,measurements::DataArray,noisemodel::AbstractNoiseModel,
@@ -28,8 +27,7 @@ immutable PhotoReceptorModel{P<:AbstractParameter} <: AbstractModel
         nsteps = numsteps(receptor)
         nvilli = numvilli(receptor)
         nphotons = numphotons(receptor)
-        new(n,parameters,photons,measurements,noisemodel,policy,receptor,fixedbumpvals,
-            zeros(Float32,nphotons),zeros(Float32,nphotons),zeros(Int,nsteps),zeros(Int,nvilli),zeros(Int,nsteps))
+        new(n,parameters,photons,measurements,noisemodel,policy,receptor,zeros(Float32,nsteps),fixedbumpvals,zeros(Float32,nphotons),zeros(Float32,nphotons))
     end
 end
 
@@ -93,18 +91,18 @@ function evaluate!(model::PhotoReceptorModel,vals::AbstractVector)
     bumpvals = _bumpvals(traittype(model.policy.bump),model,vals)
     _latency!(traittype(model.policy.latency),model,vals)
     _refractory!(traittype(model.policy.refractory),model,vals)
-    #_lightinducedcurrent!(model.lightinducedcurrent,model.filteredphotons,model.refractimes,model.receptor,model.latency,model.refractory,bumpvals)
+    lightinducedcurrent!(model.lightinducedcurrent,model.receptor,model.latency,model.refractory,bumpvals)
 end
 
+###Utility functions used in generic implementations in AbstractModel
+@inline dataindex(model::PhotoReceptorModel) = dataindex(model.measurements)
+@inline measurements(model::PhotoReceptorModel) = datavalues(model.measurements)
+@inline noisemodel(model::PhotoReceptorModel) = model.noisemodel
 lightinducedcurrent(model::PhotoReceptorModel) = model.lightinducedcurrent
 
 @inline _setval!{N<:Number}(vals::Vector{N},v::N) = @simd for i=1:length(vals) @inbounds vals[i] = v end
 
-@inline function _resettemp(model::PhotoReceptorModel)
-    _setval!(model.filteredphotons,0)
-    _setval!(model.refractimes,0)
-    _setval!(model.lightinducedcurrent,0.0f0)
-end
+@inline _resettemp(model::PhotoReceptorModel) = _setval!(model.lightinducedcurrent,0.0f0)
 
 @inline _latency!(::Type{Val{:deterministic}},m::PhotoReceptorModel,vals::AbstractVector) = _setval!(m.latency,Float32(vals[1]))
 @inline function _latency!(::Type{Val{:lognormal}},m::PhotoReceptorModel,vals::AbstractVector)

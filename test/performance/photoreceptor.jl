@@ -2,7 +2,12 @@
 println("Loading photon sequence from file")
 gc() ; photons = photonsequence("photo/data/naturallight.jld")
 for i=1:3
-  gc() ; @time photons = photonsequence("photo/data/naturallight.jld")
+    gc() ; @time photons = photonsequence("photo/data/naturallight.jld")
+end
+println("Loading light-induced current from file")
+gc() ; lic = lightinducedcurrent("photo/data/naturallight.jld")
+for i=1:3
+    gc() ; @time lic = lightinducedcurrent("photo/data/naturallight.jld")
 end
 ###############
 testunique() = (for j=1:2000 unique(sort!(rand!(Array{Int}(150),1:30000))) end ; nothing)
@@ -46,10 +51,6 @@ end
         end
     end
     a
-end
-
-@inline function testrandlognormal()
-
 end
 
 for i in [:full,:row,:cell]
@@ -202,10 +203,15 @@ for i=1:5
     gc() ; @time evaluate!(m2,[2.7,0.5,5.0,2.0,4.0,3.0,2.5])
 end
 
+println("Evaluating the model with latency and refractory parameters 1000 times")
+gc()
+@time for i=1:1000
+    evaluate!(m1,[2.7,0.5,5.0,2.0,4.0,3.0,2.5])
+end
 
+results1 = evaluate!(m1,[2.7,0.5,5.0,2.0],1)
+println("Evaluating the model 1000 times with latency and refractory parameters, storing the results")
+@time results1 = evaluate!(m1,[2.7,0.5,5.0,2.0],1000)
 
-#println("Evaluating the model 100 times with latency and refractory parameters")
-#@time results1 = evaluate!(m1,[2.7,0.5,5.0,2.0],100)
-
-#println("Evaluating the model 100 times with latency, refractory and bump parameters")
-#@time results2 = evaluate!(m2,[2.7,0.5,5.0,2.0,4.0,3.0,2.5],100)
+println("Evaluating the model 1000 times with latency, refractory and bump parameters, storing the results")
+@time results2 = evaluate!(m2,[2.7,0.5,5.0,2.0,4.0,3.0,2.5],1000)
