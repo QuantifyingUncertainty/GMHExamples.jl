@@ -1,109 +1,87 @@
 ################
 ###Photoreceptor
 ################
-abstract PhotoReceptor
+abstract AbstractPhotoReceptor
 
-numsteps(r::PhotoReceptor) = r.numsteps
-numvilli(r::PhotoReceptor) = r.numvilli
-microvilliwithphotons(r::PhotoReceptor,t::Int) = error("Not implemented because microvilliwithphotons is not efficient for PhotoReceptor of type ",typeof(r))
-photonimpacts(r::PhotoReceptor,i::Int) = error("Not implemented because photonimpacts is not efficient for PhotoReceptor of type ",typeof(r))
+numsteps(r::AbstractPhotoReceptor) = r.numsteps
+numvilli(r::AbstractPhotoReceptor) = r.numvilli
+numphotons(r::AbstractPhotoReceptor) = r.numphotons
 
-#################################
-###Photons stored in dense matrix
-#################################
+photoreceptor(s::Symbol,photons::Vector,nvilli::Integer,args...) = _photoreceptor(Val{s},photons,nvilli,args...)
 
-type PhotoReceptorDense <: PhotoReceptor
-  numsteps::Int
-  numvilli::Int
-  microvilli::AbstractMatrix{UInt8}
+###############################################
+###Photons stored in a matrix (dense or sparse)
+###############################################
+
+type PhotoReceptorMatrix{T<:Integer,A<:AbstractMatrix} <: AbstractPhotoReceptor
+    microvilli::A
+    numsteps::Int
+    numvilli::Int
+    numphotons::Int
+    PhotoReceptorMatrix(mv::AbstractMatrix{T},ns::Int,nv::Int,np::Int) = new(mv,ns,nv,np)
 end
 
-function PhotoReceptorDense(nvilli::Int,photons::AbstractVector{Int})
-  nsteps = length(photons)
-  m = zeros(UInt8,nsteps,nvilli)
-  @inbounds for i = 1:nsteps
-    @inbounds for j in rand(1:nvilli,photons[i])
-      m[i,j] += 0x01
+### Dense Matrix factory functions
+
+function _photoreceptor{T<:Integer}(::Type{Val{:full}},photons::Vector,nvilli::Integer,::Type{T})
+    nsteps = length(photons)
+    nphotons = sum(photons)
+    m = zeros(T,nsteps,nvilli)
+    for i = 1:nsteps
+        r = rand(1:nvilli,photons[i])
+        for j in r
+            @inbounds m[i,j] += one(T)
+        end
     end
-  end
-  PhotoReceptorDense(nsteps,nvilli,m)
+    PhotoReceptorMatrix{T,typeof(m)}(m,nsteps,nvilli,nphotons)
 end
 
-microvilliwithphotons(r::PhotoReceptorDense,t::Int) = find(r.microvilli[t,:])
-photonimpacts(r::PhotoReceptorDense,i::Int) = find(r.microvilli[:,i])
+### Sparse Matrix factory functions (row version)
 
-###########################################################
-###Photons stored in sparse matrix, one microvillus per row
-###########################################################
-
-type PhotoReceptorRow <: PhotoReceptor
-  numsteps::Int
-  numvilli::Int
-  microvilli::AbstractMatrix{UInt8}
+@inline function _photontimeindex{I<:Integer}(photons::Vector,::Type{I})
+    e = cumsum(photons)
+    photontime = Vector{I}(e[end])
+    for i=one(I):I(length(photons))
+        @simd for j=e[i]-photons[i]+1:e[i]
+            @inbounds photontime[j] = i
+        end
+    end
+    photontime
 end
 
-function PhotoReceptorRow(nvilli::Int,photons::AbstractVector{Int})
-  nsteps = length(photons)
-  e = cumsum(photons) ; b = e - photons + 1 ; nphotons = e[end]
-  tp = Array{Int}(nphotons)
-  @inbounds for i=1:nsteps
-    tp[b[i]:e[i]] = i
-  end
-  PhotoReceptorRow(nsteps,nvilli,sparse(rand(1:nvilli,nphotons),tp,ones(UInt8,nphotons),nvilli,nsteps))
+@inline _randvilliindex{I<:Integer}(nvilli::Int,nphotons::Int,::Type{I}) = rand(one(I):I(nvilli),nphotons)
+
+function _photoreceptor{T<:Integer,I<:Integer}(::Type{Val{:row}},photons::Vector,nvilli::Integer,::Type{T},::Type{I})
+    pti = _photontimeindex(photons,I)
+    nphotons = length(pti)
+    nsteps = length(photons)
+    m = sparse(_randvilliindex(nvilli,nphotons,I),pti,ones(T,nphotons),nvilli,nsteps)
+    PhotoReceptorMatrix{T,typeof(m)}(m,nsteps,nvilli,nphotons)
 end
 
-microvilliwithphotons(r::PhotoReceptorRow,t::Int) = sub(rowvals(r.microvilli),nzrange(r.microvilli,t))
-
-##############################################################
-###Photons stored in sparse matrix, one microvillus per column
-##############################################################
-
-type PhotoReceptorColumn <: PhotoReceptor
-  numsteps::Int
-  numvilli::Int
-  microvilli::AbstractMatrix{UInt8}
-end
-
-function PhotoReceptorColumn(nvilli::Int,photons::AbstractVector{Int})
-  nsteps = length(photons)
-  e = cumsum(photons) ; b = e - photons + 1 ; nphotons = e[end]
-  tp = Array{Int}(nphotons)
-  @inbounds for i=1:nsteps
-    tp[b[i]:e[i]] = i
-  end
-  PhotoReceptorColumn(nsteps,nvilli,sparse(tp,rand(1:nvilli,nphotons),ones(UInt8,nphotons),nsteps,nvilli))
-end
-
-photonimpacts(r::PhotoReceptorColumn,i::Int) = sub(rowvals(r.microvilli),nzrange(r.microvilli,i))
+@inline microvilliwithphotons{I<:Integer,M<:DenseMatrix}(r::PhotoReceptorMatrix{I,M},timepoint::Integer) = find(r.microvilli[timepoint,:])
+@inline microvilliwithphotons{I<:Integer,S<:SparseMatrixCSC}(r::PhotoReceptorMatrix{I,S},timepoint::Integer) = sub(rowvals(r.microvilli),nzrange(r.microvilli,timepoint))
 
 ################################
 ###Photons stored in cell matrix
 ################################
 
-type PhotoReceptorCell{T<:Integer} <: PhotoReceptor
-  numsteps::Int
-  numvilli::Int
-  microvilli::Vector{Vector{T}}
+type PhotoReceptorCell{T<:Integer} <: AbstractPhotoReceptor
+    microvilli::Vector{Vector{T}}
+    numsteps::Int
+    numvilli::Int
+    numphotons::Int
+    PhotoReceptorCell(mv::Vector{Vector{T}},ns::Int,nv::Int,np::Int) = new(mv,ns,nv,np)
 end
 
-PhotoReceptorCell(nvilli::Int,photons::AbstractVector{Int}) = PhotoReceptorCell(length(photons),nvilli,[sort!(rand!(Vector{UInt16}(p),1:nvilli)) for p in photons])
+function _photoreceptor{T<:Integer}(::Type{Val{:cell}},photons::Vector,nvilli::Integer,::Type{T})
+    PhotoReceptorCell{T}([sort!(rand!(Vector{T}(p),one(T):T(nvilli))) for p in photons],length(photons),nvilli,sum(photons))
+end
 
-microvilliwithphotons(r::PhotoReceptorCell,t::Int) = r.microvilli[t]
+@inline microvilliwithphotons(r::PhotoReceptorCell,timepoint::Integer) = r.microvilli[timepoint]
 
-##################################
-###Factory function for microvilli
-##################################
-
-function distributephotons(nvilli::Int,photons::AbstractVector{Int};impl::Symbol = :cell)
-  if impl == :full
-    PhotoReceptorDense(nvilli,photons)
-  elseif impl == :row
-    PhotoReceptorRow(nvilli,photons)
-  elseif impl == :column
-    PhotoReceptorColumn(nvilli,photons)
-  elseif impl == :cell
-    PhotoReceptorCell(nvilli,photons)
-  else
-    error("Unknown PhotoReceptor implementation $impl")
-  end
+function show(io::IO,r::AbstractPhotoReceptor)
+    println(io,"PhotoReceptor with $(r.numvilli) microvilli and $(r.numsteps) timesteps")
+    println(io,"  Additional fields: :microvilli")
+    nothing
 end

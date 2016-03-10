@@ -2,9 +2,6 @@
 using Gadfly
 using PyPlot
 
-### Include the data file
-include("../../ode/data/fitzhughnagumo.jl")
-
 ### Print a help message
 println("Plot the FitzHugh Nagumo data using:")
 println(" Gadfly package: gadflyplot_fhn()")
@@ -14,7 +11,7 @@ println(" PyPlot package: pyplot_fhn()")
 function gadflyplot_fhn()
 
   #load the data
-  timepoints,measurements = fitzhugh_nagumo_data()
+  timepoints,measurements = GMHExamples.fitzhughnagumodata()
 
   #plot the data
   Gadfly.plot(x=timepoints,y=measurements)
@@ -25,7 +22,7 @@ end
 function pyplot_fhn()
 
   #load the data
-  timepoints,measurements = fitzhugh_nagumo_data()
+  timepoints,measurements = GMHExamples.fitzhughnagumodata()
 
   #plot the data
   fig = PyPlot.figure()

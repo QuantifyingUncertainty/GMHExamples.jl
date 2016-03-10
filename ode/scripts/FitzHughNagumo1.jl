@@ -1,18 +1,11 @@
-println("=====================================================================")
-println("Beginning execution of script examples/ode/scripts/FitzHughNagumo1.jl")
-println("=====================================================================")
-###Use extra processes to run the Generalized Metropolis Hastings code
-###This will initialize 1 main and NPROCS-1 worker processes
-const NPROCS = 1
-if nprocs() < NPROCS
-    addprocs(NPROCS - nprocs())
-end
+println("============================================================================")
+println("Beginning execution of script GMH-Examples.jl/ode/scripts/FitzHughNagumo1.jl")
+println("============================================================================")
+
 println("Number of parallel processes running: ",nprocs())
+println("Use addprocs() in the REPL if you want to run on more processes")
 
-###Make the GeneralizedMetropolisHastings code available to all processes
-@everywhere using GeneralizedMetropolisHastings
-
-###Use Pyplot to plot the results
+using GeneralizedMetropolisHastings
 using PyPlot
 
 ###Print a message indicating that the GMH package has loaded correctly
@@ -21,46 +14,33 @@ print_gmh_module_loaded()
 println("================================")
 println("Initialize Simulation Parameters")
 println("================================")
-#Total number of MCMC samples
-nburnin = 1000
-nsamples = 10000
 
 #Standard M-H for nproposals == 1
 #Generalized M-H for nproposals > 1
-nproposals = 10
+nproposals = 30
+
+#MCMC iteration specifications
+nburnin = div(3000,nproposals)
+niterations = div(10000,nproposals)
+ntunerperiod = div(300,nproposals)
 
 ###Initial conditions for the spring-mass ODE (membrane potential and refractory variable)
-initialconditions = [-1.0,1.0]
+initial = [-1.0,1.0]
 
-###Default values of the parameters (a,b,c)
-defaultparams = [0.2,0.2,3.0]
+###Default values of the parameters (a,b,c) and prior boundaries
+defaults = [0.3,0.3,2.0]
+lows = zeros(3)
+highs = [5.0,5.0,5.0]
 
 ###The variance of the noise on the input data
-noise = [0.02 0.005]
+variance = [0.02,0.005]
 
 println("==========================================")
 println("Simulation parameters defined successfully")
 println("==========================================")
 
-###Make the data generation function available to the script
-include("../data/fitzhughnagumo.jl")
-
-###Make the ode and model creation function available to the script
-include("../models/fitzhughnagumo.jl")
-
-###Create a FitzHugh-Nagumo model with measurement data and ODE function
-m = fitzhugh_nagumo_model(initialconditions,defaultparams,noise)
-
-###Plot the measurement data (simmulated data + noise)
-figure("FitzHughNagumo1")
-subplot(231)
-plot(m.timepoints,m.measurements[:,1];label="membrane potential")
-plot(m.timepoints,m.measurements[:,2];label="refractory variable")
-xlabel("Time")
-ylabel("Amplitude")
-title("FitzHugh-Nagumo measurement data")
-grid("on")
-legend(loc="upper right",fancybox="true")
+###Create a FitzHugh-Nagumo model with measurement data, ODE function and parameters with default values and priors
+m = GMHExamples.fitzhughnagumomodel(initial,variance,lows,highs,defaults)
 
 ###Show the model
 println("==========================")
@@ -68,15 +48,34 @@ println("Model defined successfully")
 println("==========================")
 show(m)
 
+###Plot the measurement data (simmulated data + noise)
+figure("FitzHughNagumo1")
+subplot(231)
+plot(dataindex(m),measurements(m)[:,1];label="membrane potential")
+plot(dataindex(m),measurements(m)[:,2];label="refractory variable")
+xlabel("Time")
+ylabel("Amplitude")
+title("FitzHugh-Nagumo measurement data")
+grid("on")
+legend(loc="upper right",fancybox="true")
+
 ###Create a Metropolis sampler with a Normal proposal density
-s = MHNormal(eye(3),0.01)
+s = sampler(:mh,:normal,0.01,eye(3))
 println("============================")
 println("Sampler defined successfully")
 println("============================")
 show(s)
 
-###Create a Generalized Metropolis-Hastings runner (which will default to Standard MH because nproposals == 1)
-r = GMHRunner(nsamples,nproposals;burnin = nburnin,initialize =ValuesFromDefault())
+###Create a tuner that scales the proposal density
+t = tuner(:scale,ntunerperiod,0.5,:erf)
+println("==========================")
+println("Tuner defined successfully")
+println("==========================")
+show(t)
+
+###Create a Generalized Metropolis-Hastings runner (which will default to Standard MH when nproposals=1)
+p = policy(:gmh,nproposals;initialize=:default)
+r = runner(:gmh,niterations,nproposals,p;numburnin = nburnin)
 println("===========================")
 println("Runner defined successfully")
 println("===========================")
@@ -86,23 +85,21 @@ show(r)
 println("=======================")
 println("Run the MCMC simulation")
 println("=======================")
-c = run!(r,m,s)
+c = run!(r,m,s,t)
 println("==========================")
 println("Completed MCMC simulation")
 println("=========================")
 
-###Shut down the worker processes (to release resources before plotting)
-for i in workers()
-  if i != 1
-    rmprocs(i)
-  end
-end
-
 ###Show the results of the simulations
 show(c)
+
+nparas = numparas(m)
+meanparamvals = mean(samples(c),2)
+stdparamvals = std(samples(c),2)
+
 println("Results of the MCMC simulation:")
-for i=1:3
-  println(" parameter $(m.parameters.names[i]):  mean = ",mean(c.values[i,nburnin:end])," std = ",std(c.values[i,nburnin:end]))
+for i=1:nparas
+    println(" parameter $(parameters(m)[i].key):  mean = ",meanparamvals[i]," std = ",stdparamvals[i])
 end
 
 println("================")
@@ -112,20 +109,33 @@ println("================")
 ###Plot the loglikelihood values across samples
 ###After an initial few low values, this should remain relatively high
 subplot(232)
-plot(1:length(c.loglikelihood),c.loglikelihood+c.logprior)
-title("Loglikelihood values across samples")
+plot(1:numsamples(c),logposterior(c,m))
+title("Log-Posterior values across samples")
 xlabel("Samples")
-ylabel("loglikelihood - logprior")
+ylabel("Log-Posterior")
 
 ###Plot the histograms of a,b,c values
-for i=1:3
+for i=1:nparas
   subplot(233 + i)
-    h = PyPlot.plt[:hist](c.values[i,:]',20)
+    h = PyPlot.plt[:hist](sub(samples(c),i,:)',20)
   grid("on")
-  title("Parameter $(m.parameters.names[i])")
+  title("Parameter $(parameters(m)[i].key)")
   xlabel("Values")
   ylabel("Samples")
 end
+
+subplot(233)
+modeldata = evaluate!(m,vec(meanparamvals))
+plot(dataindex(m),measurements(m)[:,1];label="membrane potential")
+plot(dataindex(m),measurements(m)[:,2];label="refractory variable")
+plot(dataindex(m),modeldata[:,1])
+plot(dataindex(m),modeldata[:,2])
+xlabel("Time")
+ylabel("Amplitude")
+title("FitzHugh-Nagumo model data")
+grid("on")
+legend(loc="upper right",fancybox="true")
+
 
 
 

@@ -1,8 +1,8 @@
 ##############
 println("Loading photon sequence from file")
-gc() ; p = photonsequence("photo/data/naturallight.jld")
+gc() ; photons = photonsequence("photo/data/naturallight.jld")
 for i=1:3
-  gc() ; @time p = photonsequence("photo/data/naturallight.jld")
+  gc() ; @time photons = photonsequence("photo/data/naturallight.jld")
 end
 ###############
 testunique() = (for j=1:2000 unique(sort!(rand!(Array{Int}(150),1:30000))) end ; nothing)
@@ -23,22 +23,34 @@ end
 ###############
 gc()
 nvilli = 30000
-nsteps = length(p)
-receptorimpl = [:full,:row,:column,:cell]
+nsteps = numvalues(photons)
+receptorimpl = [:full,:row,:cell]
 receptors = Dict{Symbol,Any}()
 
-for i in receptorimpl
-  receptors[i] = distributephotons(nvilli,p;impl=i)
-  println("Creating PhotoReceptor of type ",i)
+for args in [(:full,(UInt8,)),(:row,(UInt16,Int)),(:cell,(UInt16,))]
+  receptors[args[1]] = photoreceptor(args[1],datavalues(photons),nvilli,args[2]...)
+  println("Creating AbstractPhotoReceptor of type ",args[1])
   for j=1:3
-    receptors[i] = []
+    receptors[args[1]] = []
     gc()
-    @time receptors[i] = distributephotons(nvilli,p;impl=i)
+    @time receptors[args[1]] = photoreceptor(args[1],datavalues(photons),nvilli,args[2]...)
   end
 end
 
-testmicrovilliaccess(receptor::PhotoReceptor) = (a = 0 ; for t=1:numsteps(receptor) microvilli = GMHExamples.microvilliwithphotons(receptor,t) ; for i=1:length(microvilli) a += microvilli[i] end end ; a)
-testimpactaccess(receptor::PhotoReceptor) = (a = 0 ; for i=1:numvilli(receptor) impacts = GMHExamples.photonimpacts(receptor,i) ; for t=1:length(impacts) a += impacts[t] end end ; a)
+@inline function testmicrovilliaccess(receptor::GMHExamples.AbstractPhotoReceptor)
+    a = 0
+    for t=1:numsteps(receptor)
+        microvilli = GMHExamples.microvilliwithphotons(receptor,t)
+        for i=1:length(microvilli)
+            a += microvilli[i]
+        end
+    end
+    a
+end
+
+@inline function testrandlognormal()
+
+end
 
 for i in [:full,:row,:cell]
   testmicrovilliaccess(receptors[i])
@@ -48,108 +60,152 @@ for i in [:full,:row,:cell]
   end
 end
 
-for i in [:full,:column]
-  testimpactaccess(receptors[i])
-  println("Testing photonimpacts access of type ",i)
-  for j=1:3
-    gc() ; @time testimpactaccess(receptors[i])
-  end
-end
-
 gc()
-for i in receptorimpl
+for i in [:full,:row,:cell]
   println("Memory taken by Microvilli object of type ",i,": ",objectsizetostr(receptors[i]))
 end
 
 gc()
 for T in [Float32,Float64]
-  println("=================")
-  println("Testing ",T)
-  println("=================")
-  ###Testing of bump functions
-  shape = T[4.0,3.0,2.5]
-  bumpvals = zeros(T,30)
-  bump!(shape[1],shape[2],shape[3],bumpvals)
-  bump(shape[1],shape[2],shape[3],30)
-  bump(shape[1],shape[2],shape[3])
-  println("Testing bump!{",T,"}")
-  for j=1:3
-    @time bumpvals = bump!(shape[1],shape[2],shape[3],bumpvals)
-  end
-  println("Testing bump{",T,"} with given length")
-  for j=1:3
-    @time bumpvals = bump(shape[1],shape[2],shape[3],30)
-  end
-  println("Testing bump{",T,"} with tolerance")
-  for j=1:3
-    @time bumpvals = bump(shape[1],shape[2],shape[3])
-  end
-  ###Testing of macrocurrent functions
-  current = zeros(T,nsteps)
-  macrocurrent!(p,bumpvals,current)
-  macrocurrent(p,bumpvals)
-  gc()
-  println("Testing macrocurrent!{",T,"}")
-  for j=1:3
+    println("=================")
+    println("Testing ",T)
+    println("=================")
+    ###Testing of bump functions
+    timepoints = collect(T(1.0):T(1.0):T(30.0))
+    shape = T[4.0,3.0,2.5]
+    cutoff = T(0.025)
+    bumpvals = zeros(T,30)
+    bump!(bumpvals,timepoints,shape[1],shape[2],shape[3])
+    bump(timepoints,shape[1],shape[2],shape[3])
+    bump(shape[1],shape[2],shape[3],cutoff)
+    println("Testing bump!{",T,"}")
+    for j=1:3
+        @time bumpvals = bump!(bumpvals,timepoints,shape[1],shape[2],shape[3])
+    end
+    println("Testing bump{",T,"} with given length")
+    for j=1:3
+        @time bumpvals = bump(timepoints,shape[1],shape[2],shape[3])
+    end
+    println("Testing bump{",T,"} with tolerance")
+    for j=1:3
+        @time bumpvals = bump(shape[1],shape[2],shape[3],cutoff)
+    end
+    bumplength = length(bumpvals)
+    ###Testing of macrocurrent functions
     current = zeros(T,nsteps)
-    @time macrocurrent!(p,bumpvals,current)
-  end
-  gc()
-  println("Testing macrocurrent{",T,"}")
-  for j=1:3
-    @time current = macrocurrent(p,bumpvals)
-  end
+    macrocurrent!(current,datavalues(photons),bumpvals)
+    macrocurrent(datavalues(photons),bumpvals)
+    gc()
+    println("Testing macrocurrent!{",T,"}")
+    for j=1:3
+        current = zeros(T,nsteps)
+        @time macrocurrent!(current,datavalues(photons),bumpvals)
+    end
+    gc()
+    println("Testing macrocurrent{",T,"}")
+    for j=1:3
+        @time current = macrocurrent(datavalues(photons),bumpvals)
+    end
+
+    latparas = T[2.7137,0.4568]
+    refparas = T[log(150),log(1.7)]
+    latency = zeros(T,sum(datavalues(photons)))
+    refractory = zeros(T,sum(datavalues(photons)))
+    GMHExamples.randlognormal!(latency,latparas[1],latparas[2])
+    GMHExamples.randlognormal!(refractory,refparas[1],refparas[2])
+    println("Generating latency and refractory values")
+    for j=1:3
+        gc() ; @time (GMHExamples.randlognormal!(latency,latparas[1],latparas[2]) ; GMHExamples.randlognormal!(refractory,refparas[1],refparas[2]))
+    end
+
+    for impl in [:cell]
+        GMHExamples._filterphotons!(zeros(Int,nsteps),zeros(Int,nvilli),receptors[impl],latency,refractory,bumplength)
+        println("Testing _filterphotons!{$(T)} for $(impl)")
+        for i=1:5
+            gc()
+            fphotons = zeros(Int,nsteps)
+            rtimes = zeros(Int,nvilli)
+            @time GMHExamples._filterphotons!(fphotons,rtimes,receptors[impl],latency,refractory,bumplength)
+        end
+        filterphotons!(zeros(Int,nsteps),receptors[impl],latency,refractory,bumplength)
+        println("Testing filterphotons!{$(T)} for $(impl)")
+        for i=1:5
+            gc()
+            fphotons = zeros(Int,nsteps)
+            @time filterphotons!(fphotons,receptors[impl],latency,refractory,bumplength)
+        end
+        filterphotons(receptors[impl],latency,refractory,bumplength)
+        println("Testing filterphotons{$(T)} for $(impl)")
+        for i=1:5
+            gc() ; @time filterphotons(receptors[impl],latency,refractory,bumplength)
+        end
+        ######################################################################################
+        GMHExamples._lightinducedcurrent!(zeros(T,nsteps),zeros(Int,nsteps),zeros(Int,nvilli),receptors[impl],latency,refractory,bumpvals)
+        println("Testing _lightinducedcurrent!{$(T)} for $(impl)")
+        for i=1:5
+            gc()
+            current = zeros(T,nsteps)
+            fphotons = zeros(Int,nsteps)
+            rtimes = zeros(Int,nvilli)
+            @time GMHExamples._lightinducedcurrent!(current,fphotons,rtimes,receptors[impl],latency,refractory,bumpvals)
+        end
+        lightinducedcurrent!(zeros(T,nsteps),receptors[impl],latency,refractory,bumpvals)
+        println("Testing lightinducedcurrent!{$(T)} for $(impl)")
+        for i=1:5
+            gc()
+            current = zeros(T,nsteps)
+            @time lightinducedcurrent!(current,receptors[impl],latency,refractory,bumpvals)
+        end
+        lightinducedcurrent(receptors[impl],latency,refractory,bumpvals)
+        println("Testing lightinducedcurrrent{$(T)} for $(impl)")
+        for i=1:5
+            gc() ; @time lightinducedcurrent(receptors[impl],latency,refractory,bumpvals)
+        end
+    end
+
+    licit = 10
+    licvec = Array(T,numvalues(photons),licit)
+
+    println("$licit iterations of lightinducedcurrent for :cell")
+    for i=1:licit
+        gc() ; @time (GMHExamples.randlognormal!(latency,latparas[1],latparas[2]) ; GMHExamples.randlognormal!(refractory,refparas[1],refparas[2]) ; licvec[:,i] = lightinducedcurrent(receptors[:cell],latency,refractory,bumpvals))
+    end
+
+    println("100 iterations of lightinducedcurrent! for :cell")
+    gc()
+    @time for i=1:100
+        GMHExamples.randlognormal!(latency,latparas[1],latparas[2])
+        GMHExamples.randlognormal!(refractory,refparas[1],refparas[2])
+        lightinducedcurrent!(current,receptors[:cell],latency,refractory,bumpvals)
+    end
 end
 
-# latparas = [2.7137,0.4568]
-# refparas = [log(150),log(1.7)]
-# latpdf = GMHExamples.latencypdf(latparas[1],latparas[2])
-# refpdf = GMHExamples.refractorypdf(refparas[1],refparas[2])
+current = data(:array,0.001f0(1:nsteps),zeros(Float32,nsteps))
+p1 = policy(:photoreceptor)
+p2 = policy(:photoreceptor,bump =:sample)
 
-# rt1 = lic(receptors[:cell],bumpvals,10,100)
-# rt2 = lic(receptors[:cell],bumpvals,latpdf,refpdf)
-# rt3 = lic(receptors[:row],bumpvals,latpdf,refpdf)
-# println("Testing deterministic lic")
-# for i=1:5
-#   gc() ; @time rt1 = lic(receptors[:cell],bumpvals,10,100)
-# end
-# println("Testing stochastic lic with :cell")
-# for i=1:5
-#   gc() ; @time rt2 = lic(receptors[:cell],bumpvals,latpdf,refpdf)
-# end
-# println("Testing stochastic lic with :row")
-# for i=1:5
-#   gc() ; @time rt3 = lic(receptors[:row],bumpvals,latpdf,refpdf)
-# end
+params1 = parameters(:photoreceptor,p1,(2.0,4.0),(0.2,0.8),(4.0,6.0),(1.5,2.5))
+params2 = parameters(:photoreceptor,p2,(2.0,4.0),(0.2,0.8),(4.0,6.0),(1.5,2.5),(3.0,5.0),(log(3.0),0.3),(log(2.5),0.3))
 
-# rt1vec = Array(Float64,length(p),10)
-# rt2vec = Array(Float64,length(p),10)
+m1 = model(:photoreceptor,params1,photons,current,[1.0],30000,p1)
+m2 = model(:photoreceptor,params2,photons,current,[1.0],30000,p2)
 
-# l1vec[:,1] = lightinducedcurrent(d1,shapeparas,10,100)
-# l2vec[:,1] = lightinducedcurrent(d1,shapeparas,latencyparas,refracparas)
-# println("Calculating light-induced current (deterministic latency and refractory parameters)")
-# for i=1:10
-#   gc() ; @time l1vec[:,i] = lightinducedcurrent(d1,shapeparas,10,100)
-# end
+println("Evaluating the model with latency and refractory parameters")
+evaluate!(m1,[2.7,0.5,5.0,2.0])
+for i=1:5
+    gc() ; @time evaluate!(m1,[2.7,0.5,5.0,2.0])
+end
 
-# println("Calculating light-induced current (stochastic latency and refractory parameters)")
-# for i=1:10
-#   gc() ; @time l2vec[:,i] = lightinducedcurrent(d1,shapeparas,latencyparas,refracparas)
-# end
-
-# println("100 Iterations of lightinducedcurrent (deterministic)")
-# l3vec = Array(Float64,length(p),100)
-# @time for i=1:10
-#   l3vec[:,i] = lightinducedcurrent(d1,shapeparas,10,100)
-# end
-
-# println("100 Iterations of lightinducedcurrent (stochastic)")
-# l4vec = Array(Float64,length(p),100)
-# @time for i=1:10
-#   l4vec[:,i] = lightinducedcurrent(d1,shapeparas,latencyparas,refracparas)
-# end
+println("Evaluating the model with latency, refractory and bump parameters")
+evaluate!(m2,[2.7,0.5,5.0,2.0,4.0,3.0,2.5])
+for i=1:5
+    gc() ; @time evaluate!(m2,[2.7,0.5,5.0,2.0,4.0,3.0,2.5])
+end
 
 
 
+#println("Evaluating the model 100 times with latency and refractory parameters")
+#@time results1 = evaluate!(m1,[2.7,0.5,5.0,2.0],100)
 
-
+#println("Evaluating the model 100 times with latency, refractory and bump parameters")
+#@time results2 = evaluate!(m2,[2.7,0.5,5.0,2.0,4.0,3.0,2.5],100)

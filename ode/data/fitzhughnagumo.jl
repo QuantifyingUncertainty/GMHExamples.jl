@@ -2,7 +2,7 @@
 ### Column 1: Membrane Potential
 ### Column 2: Recovery Variable
 ###Use examples/ode/test/plot_fitzhughnagumo.jl to plot the data
-function fitzhugh_nagumo_data()
+function fitzhughnagumodata()
 
   #create the data
   timepoints = linspace(0.0,20.0,100)
