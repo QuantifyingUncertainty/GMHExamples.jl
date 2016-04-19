@@ -1,3 +1,7 @@
+include("imports.jl")
+include("util.jl")
+srand(0)
+
 #all test categories
 alltests = [
   "unit",

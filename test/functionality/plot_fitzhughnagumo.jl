@@ -1,7 +1,3 @@
-### Load the plot packages
-using Gadfly
-using PyPlot
-
 ### Print a help message
 println("Plot the FitzHugh Nagumo data using:")
 println(" Gadfly package: gadflyplot_fhn()")

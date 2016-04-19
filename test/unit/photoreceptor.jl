@@ -25,7 +25,7 @@ for args in [(:full,(Int,)),(:row,(UInt8,Int16)),(:cell,(UInt16,))]
     srand(987)
     receptors[args[1]] = photoreceptor(args[1],datavalues(photons),nvilli,args[2]...)
     @test numvilli(receptors[args[1]]) == nvilli
-    @test numsteps(receptors[args[1]]) == nsteps
+    @test numtimesteps(receptors[args[1]]) == nsteps
     @test numphotons(receptors[args[1]]) == nphotons
 end
 

@@ -1,4 +1,5 @@
-include("util.jl")
+srand(0)
+import PyPlot
 
 functionalitytests = [
     "photoreceptor",

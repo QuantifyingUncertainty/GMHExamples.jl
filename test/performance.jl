@@ -1,4 +1,4 @@
-include("util.jl")
+srand(0)
 
 performancetests = [
   "photoreceptor"]

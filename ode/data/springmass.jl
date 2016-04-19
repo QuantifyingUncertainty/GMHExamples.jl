@@ -13,6 +13,6 @@ function springmassdata(t,y0,paras)
     y = [y0[1]*cos(a*t)+y0[2]/a*sin(a*t) -a*y0[1]*sin(a*t)+y0[2]*cos(a*t)]
 end
 
-springmassnoisy(n::AbstractNoiseModel,t,y0,paras) = applynoise!(n,springmassdata(t,y0,paras))
+springmassnoisy(n::GeneralizedMetropolisHastings.AbstractNoiseModel,t,y0,paras) = applynoise!(n,springmassdata(t,y0,paras))
 
 

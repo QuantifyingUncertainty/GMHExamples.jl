@@ -5,8 +5,9 @@ println("=======================================================================
 println("Number of parallel processes running: ",nprocs())
 println("Use addprocs() in the REPL if you want to run on more processes")
 
-using GeneralizedMetropolisHastings
 using PyPlot
+using GeneralizedMetropolisHastings
+using GMHExamples
 
 ###Print a message indicating that the GMH package has loaded correctly
 print_gmh_module_loaded()
@@ -79,8 +80,8 @@ println("==========================")
 show(t)
 
 ###Create a Generalized Metropolis-Hastings runner (which will default to Standard MH when nproposals=1)
-p = policy(:gmh,nproposals;initialize=:prior)
-r = runner(:gmh,niterations,nproposals,p;numburnin = nburnin)
+p = policy(:mh,nproposals;initialize=:prior)
+r = runner(p,niterations,nproposals;numburnin = nburnin)
 println("===========================")
 println("Runner defined successfully")
 println("===========================")
@@ -90,7 +91,7 @@ show(r)
 println("=======================")
 println("Run the MCMC simulation")
 println("=======================")
-c = run!(r,m,s,t)
+@time c = run!(r,m,s,t)
 println("=========================")
 println("Completed MCMC simulation")
 println("=========================")

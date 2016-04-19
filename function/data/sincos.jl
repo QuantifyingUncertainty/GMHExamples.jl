@@ -7,6 +7,8 @@ function sincos!(result,timepoints,paras)
     b = 2*pi*paras[2]
     @simd for i=1:length(timepoints)
         @inbounds result[i,1] = sin(a*timepoints[i])
+    end
+    @simd for i=1:length(timepoints)
         @inbounds result[i,2] = cos(b*timepoints[i])
     end
     result

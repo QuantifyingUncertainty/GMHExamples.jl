@@ -1,12 +1,12 @@
-immutable PhotoReceptorModel{P<:AbstractParameter} <: AbstractModel
+immutable PhotoReceptorModel{P<:GeneralizedMetropolisHastings.AbstractParameter} <: GeneralizedMetropolisHastings.AbstractModel
 
     #Generic model specs
     name::AbstractString
     parameters::Vector
 
-    photons::DataArray
-    measurements::DataArray
-    noisemodel::AbstractNoiseModel
+    photons::GeneralizedMetropolisHastings.DataArray
+    measurements::GeneralizedMetropolisHastings.DataArray
+    noisemodel::GeneralizedMetropolisHastings.AbstractNoiseModel
 
     policy::PhotoReceptorPolicy
     receptor::AbstractPhotoReceptor
@@ -20,11 +20,11 @@ immutable PhotoReceptorModel{P<:AbstractParameter} <: AbstractModel
     refractory::Vector{Float32}
 
     ###Inner constructor
-    function PhotoReceptorModel(parameters::Vector{P},photons::DataArray,measurements::DataArray,noisemodel::AbstractNoiseModel,
-                                policy::PhotoReceptorPolicy,receptor::AbstractPhotoReceptor,fixedbumpvals)
+    function PhotoReceptorModel(parameters::Vector{P},photons::GeneralizedMetropolisHastings.DataArray,measurements::GeneralizedMetropolisHastings.DataArray,
+                                noisemodel::GeneralizedMetropolisHastings.AbstractNoiseModel,policy::PhotoReceptorPolicy,receptor::AbstractPhotoReceptor,fixedbumpvals)
         @assert (traitvalue(policy.bump) == :fixed && length(fixedbumpvals) > 0) || (traitvalue(policy.bump) == :sample && length(fixedbumpvals) == 0)
         n = "PhotoReceptorModel"
-        nsteps = numsteps(receptor)
+        nsteps = numtimesteps(receptor)
         nvilli = numvilli(receptor)
         nphotons = numphotons(receptor)
         new(n,parameters,photons,measurements,noisemodel,policy,receptor,zeros(Float32,nsteps),fixedbumpvals,zeros(Float32,nphotons),zeros(Float32,nphotons))
@@ -65,7 +65,8 @@ function _parameters(::Type{Val{:photoreceptor}},policy::PhotoReceptorPolicy,arg
     params
 end
 
-function _model(::Type{Val{:photoreceptor}},parameters::Vector,photons::DataArray,measurements::DataArray,variance::Vector,nvilli::Int,policy::PhotoReceptorPolicy)
+function _model(::Type{Val{:photoreceptor}},parameters::Vector,photons::GeneralizedMetropolisHastings.DataArray,measurements::GeneralizedMetropolisHastings.DataArray,
+                variance::Vector,nvilli::Int,policy::PhotoReceptorPolicy)
     @assert numvalues(photons) == numvalues(measurements)
     @assert (traitvalue(policy.bump) == :fixed && length(parameters) == 4) || (traitvalue(policy.bump) == :sample && length(parameters) == 7)
     n = noise(:gaussian,variance)

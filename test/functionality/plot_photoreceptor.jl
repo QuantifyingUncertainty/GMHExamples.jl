@@ -1,6 +1,3 @@
-### Load the plot packages
-using PyPlot
-
 ### Print a help message
 println("Plot data for the photonreceptor model using:")
 println(" pyplot_photonsequence()")

@@ -1,15 +1,15 @@
 ###Policies that determine the options in the model evaluation
-immutable LatencyCalculation <: AbstractPolicyTrait
+immutable LatencyCalculation <: GeneralizedMetropolisHastings.AbstractPolicyTrait
     trait::Symbol
     LatencyCalculation(s::Symbol) = (@assert in(s,[:deterministic,:lognormal]) ; new(s))
 end
 
-immutable RefractoryCalculation <: AbstractPolicyTrait
+immutable RefractoryCalculation <: GeneralizedMetropolisHastings.AbstractPolicyTrait
     trait::Symbol
     RefractoryCalculation(s::Symbol) = (@assert in(s,[:deterministic,:lognormal]) ; new(s))
 end
 
-immutable BumpShape <: AbstractPolicyTrait
+immutable BumpShape <: GeneralizedMetropolisHastings.AbstractPolicyTrait
     trait::Symbol
     BumpShape(s::Symbol) = (@assert in(s,[:fixed,:sample]) ; new(s))
 end
@@ -29,8 +29,8 @@ _trait(::Type{Val{:latency}},t::Symbol) = LatencyCalculation(t)
 _trait(::Type{Val{:refractory}},t::Symbol) = RefractoryCalculation(t)
 _trait(::Type{Val{:bump}},t::Symbol) = BumpShape(t)
 
-paramkeys(t::AbstractPolicyTrait) = tuple([symbol(_traitname(t),x) for x in _paramkeys(t)]...)
-parampriors(t::AbstractPolicyTrait) = _parampriors(t)
+paramkeys(t::GeneralizedMetropolisHastings.AbstractPolicyTrait) = tuple([symbol(_traitname(t),x) for x in _paramkeys(t)]...)
+parampriors(t::GeneralizedMetropolisHastings.AbstractPolicyTrait) = _parampriors(t)
 
 function _paramkeys(t::Union{LatencyCalculation,RefractoryCalculation})
     if t.trait == :deterministic
@@ -71,7 +71,7 @@ end
 fixedbumpshape(;amplitude =4.0f0,shape =3.0f0,scale =2.5f0,cutoff =0.025f0) = FixedBumpShapeParameters(amplitude,shape,scale,cutoff)
 fixedbumpvalues(f::FixedBumpShapeParameters) = (f.amplitude,f.shape,f.scale,f.cutoff)
 
-immutable PhotoReceptorPolicy <: AbstractPolicy
+immutable PhotoReceptorPolicy <: GeneralizedMetropolisHastings.AbstractPolicy
     latency::LatencyCalculation
     refractory::RefractoryCalculation
     bump::BumpShape

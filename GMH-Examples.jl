@@ -1,21 +1,28 @@
 module GMHExamples
 
-using Compat
-using GeneralizedMetropolisHastings
-
+import Compat
 import JLD
 import Distributions
+import GeneralizedMetropolisHastings
 
 import Base: show
-import GeneralizedMetropolisHastings: _trait,_policy,_parameters,_model,evaluate!,dataindex,measurements,noisemodel
+
+import GeneralizedMetropolisHastings:
+    AbstractParameter,
+    trait,_trait,traitvalue,traittype,
+    _policy,
+    parameter,parameters,_parameters,
+    data,datavalues,dataindex,
+    noise,noisemodel,
+    model,_model,numvalues,measurements,
+    evaluate!,
+    applynoise!
 
 export
-    AbstractPhotoReceptor,PhotoReceptorModel,
-    fixedbumpshape,
-    photonsequence,lightinducedcurrent,
-    photoreceptor,numsteps,numvilli,numphotons,
-    bump!,bump,macrocurrent!,macrocurrent,filterphotons!,filterphotons,
-    lightinducedcurrent!,lightinducedcurrent
+    photonsequence, lightinducedcurrent, #from datafunctions.jl
+    paramkeys,parampriors,fixedbumpvalues,fixedbumpshape, #from PhotoReceptorPolicy.jl
+    photoreceptor,numtimesteps,numvilli,numphotons,microvilliwithphotons, #from PhotoReceptor.jl
+    bump,bump!,lightinducedcurrent!,lightinducedcurrent #from lightinducedcurrent.jl
 
 include("ode/data/fitzhughnagumo.jl")
 include("ode/data/springmass.jl")

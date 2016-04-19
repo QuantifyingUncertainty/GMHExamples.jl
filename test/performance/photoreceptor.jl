@@ -44,7 +44,7 @@ end
 
 @inline function testmicrovilliaccess(receptor::GMHExamples.AbstractPhotoReceptor)
     a = 0
-    for t=1:numsteps(receptor)
+    for t=1:numtimesteps(receptor)
         microvilli = GMHExamples.microvilliwithphotons(receptor,t)
         for i=1:length(microvilli)
             a += microvilli[i]

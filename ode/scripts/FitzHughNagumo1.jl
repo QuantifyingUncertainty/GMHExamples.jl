@@ -21,7 +21,7 @@ nproposals = 30
 
 #MCMC iteration specifications
 nburnin = div(3000,nproposals)
-niterations = div(10000,nproposals)
+niterations = div(30000,nproposals)
 ntunerperiod = div(300,nproposals)
 
 ###Initial conditions for the spring-mass ODE (membrane potential and refractory variable)
@@ -74,8 +74,8 @@ println("==========================")
 show(t)
 
 ###Create a Generalized Metropolis-Hastings runner (which will default to Standard MH when nproposals=1)
-p = policy(:gmh,nproposals;initialize=:default)
-r = runner(:gmh,niterations,nproposals,p;numburnin = nburnin)
+p = policy(:mh,nproposals;initialize=:default)
+r = runner(p,niterations,nproposals;numburnin = nburnin)
 println("===========================")
 println("Runner defined successfully")
 println("===========================")
@@ -85,7 +85,7 @@ show(r)
 println("=======================")
 println("Run the MCMC simulation")
 println("=======================")
-c = run!(r,m,s,t)
+@time c = run!(r,m,s,t)
 println("==========================")
 println("Completed MCMC simulation")
 println("=========================")

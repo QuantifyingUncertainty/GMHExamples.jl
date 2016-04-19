@@ -1,7 +1,3 @@
-### Load the plot packages
-using Gadfly
-using PyPlot
-
 ### Print a help message
 println("Plot spring-mass measurement data using:")
 println(" Gadfly package: gadflyplot_springmass(y0,paras,noisevar;timepoints)")

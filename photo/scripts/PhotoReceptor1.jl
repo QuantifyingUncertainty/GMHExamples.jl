@@ -18,11 +18,11 @@ println("================================")
 
 #Standard M-H for nproposals == 1
 #Generalized M-H for nproposals > 1
-nproposals = 100
+nproposals = 1000
 
 #MCMC iteration specifications
 nburnin = 0
-niterations = 1000
+niterations = 100
 ntunerperiod = 10
 
 ###Values of the model
@@ -87,8 +87,8 @@ println("==========================")
 show(tuner1)
 
 ###Create a Generalized Metropolis-Hastings runner (which will default to Standard MH when nproposals=1)
-runnerpolicy1 = policy(:gmh,nproposals;initialize=:prior)
-runner1 = runner(:gmh,niterations,nproposals,runnerpolicy1;numburnin = nburnin)
+runnerpolicy1 = policy(:mh,nproposals;initialize=:prior)
+runner1 = runner(runnerpolicy1,niterations,nproposals;numburnin = nburnin)
 println("===========================")
 println("Runner defined successfully")
 println("===========================")
@@ -98,7 +98,7 @@ show(runner1)
 println("=======================")
 println("Run the MCMC simulation")
 println("=======================")
-chain1 = run!(runner1,model1,sampler1,tuner1)
+@time chain1 = run!(runner1,model1,sampler1,tuner1)
 println("=========================")
 println("Completed MCMC simulation")
 println("=========================")

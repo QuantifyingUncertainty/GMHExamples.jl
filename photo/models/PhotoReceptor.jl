@@ -3,7 +3,7 @@
 ################
 abstract AbstractPhotoReceptor
 
-numsteps(r::AbstractPhotoReceptor) = r.numsteps
+numtimesteps(r::AbstractPhotoReceptor) = r.numsteps
 numvilli(r::AbstractPhotoReceptor) = r.numvilli
 numphotons(r::AbstractPhotoReceptor) = r.numphotons
 
