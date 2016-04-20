@@ -2,10 +2,14 @@ println("=======================================================================
 println("Beginning execution of script GMH-Examples.jl/ode/scripts/FitzHughNagumo1.jl")
 println("============================================================================")
 
+import GeneralizedMetropolisHastings
+import GMHModels
+
 println("Number of parallel processes running: ",nprocs())
 println("Use addprocs() in the REPL if you want to run on more processes")
 
-using GeneralizedMetropolisHastings
+@everywhere using GeneralizedMetropolisHastings
+@everywhere using GMHModels
 using PyPlot
 
 ###Print a message indicating that the GMH package has loaded correctly
@@ -40,7 +44,7 @@ println("Simulation parameters defined successfully")
 println("==========================================")
 
 ###Create a FitzHugh-Nagumo model with measurement data, ODE function and parameters with default values and priors
-m = GMHExamples.fitzhughnagumomodel(initial,variance,lows,highs,defaults)
+m = fitzhughnagumomodel(initial,variance,lows,highs,defaults)
 
 ###Show the model
 println("==========================")

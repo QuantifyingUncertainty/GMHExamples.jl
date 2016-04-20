@@ -2,12 +2,15 @@ println("=======================================================================
 println("Beginning execution of script GMH-Examples.jl/ode/scripts/SpringMass1.jl")
 println("========================================================================")
 
+import GeneralizedMetropolisHastings
+import GMHModels
+
 println("Number of parallel processes running: ",nprocs())
 println("Use addprocs() in the REPL if you want to run on more processes")
 
+@everywhere using GeneralizedMetropolisHastings
+@everywhere using GMHModels
 using PyPlot
-using GeneralizedMetropolisHastings
-using GMHExamples
 
 ###Print a message indicating that the GMH package has loaded correctly
 print_gmh_module_loaded()
@@ -46,7 +49,7 @@ println("Simulation parameters defined successfully")
 println("==========================================")
 
 ###Create a Spring-Mass model with measurement data and ODE function
-m = GMHExamples.springmassmodel(timepoints,[initialposition,initialvelocity],[K,M],variance,lows,highs)
+m = springmassmodel(timepoints,[initialposition,initialvelocity],[K,M],variance,lows,highs)
 
 ###Show the model
 println("==========================")

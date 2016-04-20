@@ -2,10 +2,14 @@ println("=======================================================================
 println("Beginning execution of script GMH-Examples.jl/function/scripts/SinCos1.jl")
 println("=========================================================================")
 
+import GeneralizedMetropolisHastings
+import GMHModels
+
 println("Number of parallel processes running: ",nprocs())
 println("Use addprocs() in the REPL if you want to run on more processes")
 
-using GeneralizedMetropolisHastings
+@everywhere using GeneralizedMetropolisHastings
+@everywhere using GMHModels
 using PyPlot
 
 ###Print a message indicating that the GMH package has loaded correctly
@@ -41,7 +45,7 @@ println("Simulation parameters defined successfully")
 println("==========================================")
 
 ###Create a Spring-Mass model with measurement data and ODE function
-m = GMHExamples.sincosmodel(timepoints,[a,b],variance,lows,highs)
+m = sincosmodel(timepoints,[a,b],variance,lows,highs)
 
 ###Show the model
 println("==========================")
