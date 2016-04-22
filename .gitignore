@@ -1,2 +1,3 @@
 .evoqusignore
-Evoqus-PhotoReceptor1.jl
+photo/notebooks/.ipynb_checkpoints
+ode/notebooks/.ipynb_checkpoints
