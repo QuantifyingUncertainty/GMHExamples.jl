@@ -1,51 +1,45 @@
-println("=========================================================================")
-println("Beginning execution of script GMH-Examples.jl/function/scripts/SinCos2.jl")
-println("=========================================================================")
+println("===================================================================")
+println("Beginning GMH-Examples.jl/ode/predatorprey/scripts/PredatorPrey1.jl")
+println("===================================================================")
 
-import GeneralizedMetropolisHastings
-import GMHModels
+import GeneralizedMetropolisHastings #pre-include to avoid race condition when running in parallel
 
 println("Number of parallel processes running: ",nprocs())
 println("Use addprocs() in the REPL if you want to run on more processes")
 
 @everywhere using GeneralizedMetropolisHastings
-@everywhere using GMHModels
 using PyPlot
 
-###Print a message indicating that the GMH package has loaded correctly
-print_gmh_module_loaded()
-
-println("================================")
-println("Initialize Simulation Parameters")
-println("================================")
+###Include the model functions
+include("../models/model.jl")
 
 #Standard M-H for nproposals == 1
 #Generalized M-H for nproposals > 1
-nproposals = 100
+nproposals = 200
 
 #MCMC iteration specifications
-nburnin = div(10000,nproposals)
-niterations = div(100000,nproposals)
-ntunerperiod = div(1000,nproposals)
+nburnin = 1000
+niterations = 10000
+ntunerperiod = 100
 
-#Time points to simulate the sine-cosine model
-timepoints = linspace(0.0,10.0,500)
+###Initial conditions for the ODE (membrane potential and refractory variable)
+initial = [50.0,5.0]
 
-###Values of the model parameters (sine and cosine coefficients)
-a = 1/2
-b = 2/3
-lows = [0.4,0.3]
-highs = [0.6,1.0]
+###Default values of the parameters (a,b,c) and prior boundaries
+#defaults = [0.36,107.38,0.87,53.36,0.64,0.27]
+defaults = [0.4,107.0,0.9,53.0,0.7,0.3]
+lows = zeros(6)
+highs = 150*ones(6)
 
-###The variance of the normal noise on the input data
-variance = [0.09,0.09]
+###The variance of the noise on the input data
+variance = 0.1*ones(2)
 
 println("==========================================")
 println("Simulation parameters defined successfully")
 println("==========================================")
 
-###Create a Spring-Mass model with measurement data and ODE function
-m = sincosmodel!(timepoints,[a,b],variance,lows,highs)
+###Create a FitzHugh-Nagumo model with measurement data, ODE function and parameters with default values and priors
+m = predatorpreymodel(initial,variance,lows,highs,defaults)
 
 ###Show the model
 println("==========================")
@@ -54,18 +48,18 @@ println("==========================")
 show(m)
 
 ###Plot the measurement data (simmulated data + noise)
-figure("SinCos2") ; clf()
+figure("PredatorPrey1")
 subplot(221)
-plot(dataindex(m),measurements(m)[:,1];label="sine")
-plot(dataindex(m),measurements(m)[:,2];label="cosine")
+plot(dataindex(m),measurements(m)[:,1];label="Prey")
+plot(dataindex(m),measurements(m)[:,2];label="Predator")
 xlabel("Time")
 ylabel("Amplitude")
-title("Sine-Cosine data")
+title("Predator-Prey measurement data")
 grid("on")
 legend(loc="upper right",fancybox="true")
 
-###Create a Metropolis sampler with a Normal proposal density
-s = sampler(:mh,:normal,0.001,eye(2))
+###Create a Metropolis Sampler with normal proposal density
+s = sampler(:mh,:normal,1.0,[0.005,0.08,0.012,0.03,0.006,0.003])
 println("============================")
 println("Sampler defined successfully")
 println("============================")
@@ -79,7 +73,7 @@ println("==========================")
 show(t)
 
 ###Create a Generalized Metropolis-Hastings runner (which will default to Standard MH when nproposals=1)
-p = policy(:mh,nproposals;initialize=:prior)
+p = policy(:mh,nproposals;initialize=:default)
 r = runner(p,niterations,nproposals;numburnin = nburnin)
 println("===========================")
 println("Runner defined successfully")
@@ -91,11 +85,11 @@ println("=======================")
 println("Run the MCMC simulation")
 println("=======================")
 @time c = run!(r,m,s,t)
-println("=========================")
+println("==========================")
 println("Completed MCMC simulation")
 println("=========================")
 
-###Show the result of the simulations
+###Show the results of the simulations
 show(c)
 
 nparas = numparas(m)
@@ -103,8 +97,9 @@ meanparamvals = mean(samples(c),2)
 stdparamvals = std(samples(c),2)
 
 println("Results of the MCMC simulation:")
-println(" mean a: ",meanparamvals[1])
-println(" mean b: ",meanparamvals[2])
+for i=1:nparas
+    println(" parameter $(parameters(m)[i].key):  mean = ",meanparamvals[i]," std = ",stdparamvals[i])
+end
 
 println("================")
 println("Plotting results")
@@ -118,9 +113,22 @@ title("Log-Posterior values across samples")
 xlabel("Samples")
 ylabel("Log-Posterior")
 
-###Plot the histograms of a,b values
+subplot(223)
+modeldata = evaluate!(m,vec(meanparamvals))
+plot(dataindex(m),measurements(m)[:,1];label="Prey")
+plot(dataindex(m),measurements(m)[:,2];label="Predator")
+plot(dataindex(m),modeldata[:,1];label="Model Prey")
+plot(dataindex(m),modeldata[:,2];label="Model Predator")
+xlabel("Time")
+ylabel("Amplitude")
+title("Predator-Prey model data")
+grid("on")
+legend(loc="upper right",fancybox="true")
+
+###Plot the histograms of parameter values
+figure("PredatorPrey2")
 for i=1:nparas
-  subplot(222 + i)
+  subplot(230 + i)
     h = PyPlot.plt[:hist](sub(samples(c),i,:)',20)
   grid("on")
   title("Parameter $(parameters(m)[i].key)")
@@ -128,9 +136,12 @@ for i=1:nparas
   ylabel("Samples")
 end
 
-###Finally, plot the average model results in the data window
-subplot(221)
-modeldata = evaluate!(m,vec(meanparamvals))
-plot(dataindex(m),modeldata[:,1];label="model sine")
-plot(dataindex(m),modeldata[:,2];label="model cosine")
-legend(loc="upper right",fancybox="true")
+
+
+
+
+
+
+
+
+

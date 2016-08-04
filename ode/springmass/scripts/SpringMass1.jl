@@ -1,51 +1,49 @@
-println("=========================================================================")
-println("Beginning execution of script GMH-Examples.jl/function/scripts/SinCos1.jl")
-println("=========================================================================")
+println("===================================================================================")
+println("Beginning execution of script GMH-Examples.jl/ode/springmass/scripts/SpringMass1.jl")
+println("===================================================================================")
 
-import GeneralizedMetropolisHastings
-import GMHModels
+import GeneralizedMetropolisHastings #pre-include to avoid race condition when running in parallel
 
 println("Number of parallel processes running: ",nprocs())
 println("Use addprocs() in the REPL if you want to run on more processes")
 
 @everywhere using GeneralizedMetropolisHastings
-@everywhere using GMHModels
 using PyPlot
 
-###Print a message indicating that the GMH package has loaded correctly
-print_gmh_module_loaded()
-
-println("================================")
-println("Initialize Simulation Parameters")
-println("================================")
+###Include the model functions
+include("../models/model.jl")
 
 #Standard M-H for nproposals == 1
 #Generalized M-H for nproposals > 1
-nproposals = 100
+nproposals = 10
 
 #MCMC iteration specifications
-nburnin = div(10000,nproposals)
-niterations = div(100000,nproposals)
-ntunerperiod = div(1000,nproposals)
+nburnin = 200
+niterations = 1000
+ntunerperiod = 20
 
-#Time points to simulate the sine-cosine model
-timepoints = linspace(0.0,10.0,500)
+#Time points to simulate the spring-mass ODE
+timepoints = 0.0:0.1:10.0
 
-###Values of the model parameters (sine and cosine coefficients)
-a = 1/2
-b = 2/3
-lows = [0.4,0.3]
-highs = [0.6,1.0]
+###Initial conditions for the spring-mass ODE (position and speed)
+initialposition = -1.0 #in meters
+initialvelocity = 1.0 #in meters/second
+
+###Values of the model parameters (spring stiffness K and mass M)
+K = 50.0 #in Newton/meter
+M = 10.0 #in kg
+lows = [K-K/5,M-M/5]
+highs = [K+K/5,M+M/5]
 
 ###The variance of the normal noise on the input data
-variance = [0.09,0.09]
+variance = [0.01,0.09]
 
 println("==========================================")
 println("Simulation parameters defined successfully")
 println("==========================================")
 
 ###Create a Spring-Mass model with measurement data and ODE function
-m = sincosmodel(timepoints,[a,b],variance,lows,highs)
+m = springmassmodel(timepoints,[initialposition,initialvelocity],[K,M],variance,lows,highs)
 
 ###Show the model
 println("==========================")
@@ -54,18 +52,18 @@ println("==========================")
 show(m)
 
 ###Plot the measurement data (simmulated data + noise)
-figure("SinCos1") ; clf()
+figure("SpringMass1")
 subplot(221)
-plot(dataindex(m),measurements(m)[:,1];label="sine")
-plot(dataindex(m),measurements(m)[:,2];label="cosine")
+plot(dataindex(m),measurements(m)[:,1];label="location")
+plot(dataindex(m),measurements(m)[:,2];label="velocity")
 xlabel("Time")
 ylabel("Amplitude")
-title("Sine-Cosine data")
+title("Spring-Mass measurement data")
 grid("on")
 legend(loc="upper right",fancybox="true")
 
 ###Create a Metropolis sampler with a Normal proposal density
-s = sampler(:mh,:normal,0.001,eye(2))
+s = sampler(:mh,:normal,1.0,0.01eye(2))
 println("============================")
 println("Sampler defined successfully")
 println("============================")
@@ -103,8 +101,10 @@ meanparamvals = mean(samples(c),2)
 stdparamvals = std(samples(c),2)
 
 println("Results of the MCMC simulation:")
-println(" mean a: ",meanparamvals[1])
-println(" mean b: ",meanparamvals[2])
+println(" mean K: ",meanparamvals[1])
+println(" mean M: ",meanparamvals[2])
+println(" mean K/M: ",meanparamvals[1]/meanparamvals[2])
+println("Mean K/M should be close to $(K/M)")
 
 println("================")
 println("Plotting results")
@@ -118,19 +118,37 @@ title("Log-Posterior values across samples")
 xlabel("Samples")
 ylabel("Log-Posterior")
 
-###Plot the histograms of a,b values
-for i=1:nparas
-  subplot(222 + i)
-    h = PyPlot.plt[:hist](sub(samples(c),i,:)',20)
-  grid("on")
-  title("Parameter $(parameters(m)[i].key)")
-  xlabel("Values")
-  ylabel("Samples")
-end
+###Plot a scatter plot of K vs M values
+###These should be spread around the K/M == 10.0 line (the diagonal in the figure)
+ax3 = subplot(223)
+ax3[:set_xlim]([lows[1],highs[1]])
+ax3[:set_ylim]([lows[2],highs[2]])
+scatter(sub(samples(c),1,:)',sub(samples(c),2,:)',marker=".",color="blue")
+ax3[:set_aspect](abs(highs[1]-lows[1])/abs(highs[2]-lows[2]))
+title("MCMC samples of Spring-Mass ODE parameters")
+xlabel("Stiffness K (N/m)")
+ylabel("Mass M (kg)")
+grid("on")
+
+###Plot a histogram of K/M values, which should peak around the true ratio of K/M
+ax4 = subplot(224)
+kml,kmu = K/M-K/M/20.0,K/M+K/M/20.0
+ax4[:set_xlim]([kml,kmu])
+nbins = linspace(kml,kmu,100)
+h = PyPlot.plt[:hist]((sub(samples(c),1,:)./sub(samples(c),2,:))',nbins)
+grid("on")
+xlabel("K/M")
+ylabel("Number of Samples")
+title("Histogram of K/M values")
 
 ###Finally, plot the average model results in the data window
 subplot(221)
 modeldata = evaluate!(m,vec(meanparamvals))
-plot(dataindex(m),modeldata[:,1];label="model sine")
-plot(dataindex(m),modeldata[:,2];label="model cosine")
-legend(loc="upper right",fancybox="true")
+plot(dataindex(m),modeldata[:,1];label="model location")
+plot(dataindex(m),modeldata[:,2];label="model velocity")
+
+
+
+
+
+
