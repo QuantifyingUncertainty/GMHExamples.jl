@@ -1,5 +1,5 @@
 #include measurment data
-include ("../data/dataset1.jl")
+include("../data/dataset1.jl")
 
 ###ODE for the FitzHugh-Nagumo model: http://www.scholarpedia.org/article/FitzHugh-Nagumo_model
 ### t = timepoints to evaluate the ODE at
