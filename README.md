@@ -8,7 +8,7 @@ To run these experiments in Amazon Web Services, JuliaBox or on your local machi
 Top-level package contents:
 
 1. **ode**: contains examples in which the model is an ordinary differential equation.
-2. **function**: contains examples in which the model is a function which can be called directly.
+2. **target**: contains examples in which the model is a target function which can be called directly.
 
 Examples are organised in self-contained folders. They contain some or all of the following subfolders:
 
