@@ -22,17 +22,17 @@ nburnin = 1000
 niterations = 10000
 ntunerperiod = 100
 
-###Initial conditions for the ODE (membrane potential and refractory variable)
+###Initial conditions for the ODE (prey and predator populations)
 initial = [50.0,5.0]
 
-###Default values of the parameters (a,b,c) and prior boundaries
+###Default values of the parameters and prior boundaries
 #defaults = [0.36,107.38,0.87,53.36,0.64,0.27]
 defaults = [0.4,107.0,0.9,53.0,0.7,0.3]
 lows = zeros(6)
 highs = 150*ones(6)
 
 ###The variance of the noise on the input data
-variance = 0.1*ones(2)
+variance = sqrt(10.0)*ones(2)
 
 println("==========================================")
 println("Simulation parameters defined successfully")
