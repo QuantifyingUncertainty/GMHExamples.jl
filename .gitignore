@@ -1,3 +1,3 @@
 .evoqusignore
-target/notebooks/.ipynb_checkpoints
-ode/notebooks/.ipynb_checkpoints
+ode/springmass/notebooks/.ipynb_checkpoints
+ode/fitzhughnagumo/notebooks/.ipynb_checkpoints
