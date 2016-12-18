@@ -1,17 +1,16 @@
-println("===================================================================================")
-println("Beginning execution of script GMH-Examples.jl/ode/springmass/scripts/SpringMass1.jl")
-println("===================================================================================")
+println("==================================================================================")
+println("Beginning execution of script GMHExamples.jl/ode/springmass/scripts/SpringMass1.jl")
+println("==================================================================================")
 
 import GeneralizedMetropolisHastings #pre-include to avoid race condition when running in parallel
+import GMHExamples
 
 println("Number of parallel processes running: ",nprocs())
 println("Use addprocs() in the REPL if you want to run on more processes")
 
 @everywhere using GeneralizedMetropolisHastings
+@everywhere using GMHExamples
 using PyPlot
-
-###Include the model functions
-include("../models/model.jl")
 
 #Standard M-H for nproposals == 1
 #Generalized M-H for nproposals > 1
@@ -123,7 +122,7 @@ ylabel("Log-Posterior")
 ax3 = subplot(223)
 ax3[:set_xlim]([lows[1],highs[1]])
 ax3[:set_ylim]([lows[2],highs[2]])
-scatter(sub(samples(c),1,:)',sub(samples(c),2,:)',marker=".",color="blue")
+scatter(vec(getindex(samples(c),1,:)),vec(getindex(samples(c),2,:)),marker=".",color="blue")
 ax3[:set_aspect](abs(highs[1]-lows[1])/abs(highs[2]-lows[2]))
 title("MCMC samples of Spring-Mass ODE parameters")
 xlabel("Stiffness K (N/m)")
@@ -135,7 +134,7 @@ ax4 = subplot(224)
 kml,kmu = K/M-K/M/20.0,K/M+K/M/20.0
 ax4[:set_xlim]([kml,kmu])
 nbins = linspace(kml,kmu,100)
-h = PyPlot.plt[:hist]((sub(samples(c),1,:)./sub(samples(c),2,:))',nbins)
+h = PyPlot.plt[:hist]((vec(getindex(samples(c),1,:)./getindex(samples(c),2,:))),nbins)
 grid("on")
 xlabel("K/M")
 ylabel("Number of Samples")

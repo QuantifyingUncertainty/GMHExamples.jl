@@ -1,12 +1,9 @@
-#include measurment data
-include("../data/dataset1.jl")
-
 ###ODE for the FitzHugh-Nagumo model: http://www.scholarpedia.org/article/FitzHugh-Nagumo_model
 ### t = timepoints to evaluate the ODE at
 ### y = the model's state variables (Membrane Potential,Refractory Variable)
 ### ydot = the derivate values
 ### paras = the equation parameters (a,b,c)
-@everywhere function fitzhughnagumoode(t,y,ydot,paras)
+function fitzhughnagumoode(t,y,ydot,paras)
 
     a = paras[1]
     b = paras[2]

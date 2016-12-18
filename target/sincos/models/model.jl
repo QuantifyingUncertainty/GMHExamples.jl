@@ -1,5 +1,5 @@
 ###Target functions
-@everywhere function sincos!(r::Matrix,t::AbstractVector,paras::Vector)
+function sincos!(r::Matrix,t::AbstractVector,paras::Vector)
     p1 = 2*pi*paras[1]
     p2 = 2*pi*paras[2]
     @simd for i=1:length(t)
@@ -11,7 +11,7 @@
     r
 end
 
-@everywhere sincos(t::AbstractVector,paras::Vector) = sincos!(zeros(eltype(t),length(t),2),t,paras)
+sincos(t::AbstractVector,paras::Vector) = sincos!(zeros(eltype(t),length(t),2),t,paras)
 
 @inline function _commonsincoscomponents(t::AbstractVector,measurementparas::Vector,variance::Vector,paraminit...)
     modelparameters = parameters([:a,:b],paraminit...)

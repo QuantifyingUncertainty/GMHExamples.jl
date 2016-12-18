@@ -1,17 +1,16 @@
 println("=======================================================================")
-println("Beginning GMH-Examples.jl/ode/fitzhughnagumo/scripts/FitzHughNagumo1.jl")
+println("Beginning GMHExamples.jl/ode/fitzhughnagumo/scripts/FitzHughNagumo1.jl")
 println("=======================================================================")
 
 import GeneralizedMetropolisHastings #pre-include to avoid race condition when running in parallel
+import GMHExamples
 
 println("Number of parallel processes running: ",nprocs())
 println("Use addprocs() in the REPL if you want to run on more processes")
 
 @everywhere using GeneralizedMetropolisHastings
+@everywhere using GMHExamples
 using PyPlot
-
-###Include the model functions
-include("../models/model.jl")
 
 #Standard M-H for nproposals == 1
 #Generalized M-H for nproposals > 1
@@ -115,7 +114,7 @@ ylabel("Log-Posterior")
 ###Plot the histograms of a,b,c values
 for i=1:nparas
   subplot(233 + i)
-    h = PyPlot.plt[:hist](sub(samples(c),i,:)',20)
+    h = PyPlot.plt[:hist](vec(getindex(samples(c),i,:)),20)
   grid("on")
   title("Parameter $(parameters(m)[i].key)")
   xlabel("Values")

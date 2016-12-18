@@ -22,7 +22,7 @@ springmassnoisydata(t::AbstractVector,y0::AbstractVector,paras::AbstractVector,n
 ### y: the values of the variables (x,v=dx/dt)
 ### ydot: the derivate vaues (v=dx/dt,a=d2x/dt2)
 ### paras: the equation parameters (K,M)
-@everywhere function springmassode(t,y,ydot,paras)
+function springmassode(t,y,ydot,paras)
 
     ydot[1] = y[2]
     ydot[2] = -paras[1]/paras[2]*y[1] #-K/M*X

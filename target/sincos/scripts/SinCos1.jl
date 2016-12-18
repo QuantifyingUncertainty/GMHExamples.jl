@@ -1,17 +1,16 @@
-println("==============================================================================")
-println("Beginning execution of script GMH-Examples.jl/target/sincos/scripts/SinCos1.jl")
-println("==============================================================================")
+println("=============================================================================")
+println("Beginning execution of script GMHExamples.jl/target/sincos/scripts/SinCos1.jl")
+println("=============================================================================")
 
 import GeneralizedMetropolisHastings #pre-include to avoid race condition when running in parallel
+import GMHExamples #pre-include to avoid race conditions
 
 println("Number of parallel processes running: ",nprocs())
 println("Use addprocs() in the REPL if you want to run on more processes")
 
 @everywhere using GeneralizedMetropolisHastings
+@everywhere using GMHExamples
 using PyPlot
-
-###Include the model functions
-include("../models/model.jl")
 
 #Standard M-H for nproposals == 1
 #Generalized M-H for nproposals > 1
@@ -115,7 +114,7 @@ ylabel("Log-Posterior")
 ###Plot the histograms of a,b values
 for i=1:nparas
   subplot(222 + i)
-    h = PyPlot.plt[:hist](sub(samples(c),i,:)',20)
+    h = PyPlot.plt[:hist](vec(getindex(samples(c),i,:)),20)
   grid("on")
   title("Parameter $(parameters(m)[i].key)")
   xlabel("Values")

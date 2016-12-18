@@ -1,12 +1,9 @@
-#include measurment data
-include("../data/dataset1.jl")
-
 ###ODE for a predator-prey model
 ### t = timepoints to evaluate the ODE at
 ### y = the model's state variables (prey population size - predator population size)
 ### ydot = the derivate values
 ### paras = the equation parameters (r,K,s,a,u,v)
-@everywhere function predatorpreyode(t,y,ydot,paras)
+function predatorpreyode(t,y,ydot,paras)
 
     r = paras[1]
     k = paras[2]
