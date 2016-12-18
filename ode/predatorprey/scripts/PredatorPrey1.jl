@@ -1,17 +1,16 @@
 println("===================================================================")
-println("Beginning GMH-Examples.jl/ode/predatorprey/scripts/PredatorPrey1.jl")
+println("Beginning GMHExamples.jl/ode/predatorprey/scripts/PredatorPrey1.jl")
 println("===================================================================")
 
 import GeneralizedMetropolisHastings #pre-include to avoid race condition when running in parallel
+import GMHExamples
 
 println("Number of parallel processes running: ",nprocs())
 println("Use addprocs() in the REPL if you want to run on more processes")
 
 @everywhere using GeneralizedMetropolisHastings
+@everywhere using GMHExamples
 using PyPlot
-
-###Include the model functions
-include("../models/model.jl")
 
 #Standard M-H for nproposals == 1
 #Generalized M-H for nproposals > 1
@@ -19,7 +18,7 @@ nproposals = 200
 
 #MCMC iteration specifications
 nburnin = 1000
-niterations = 10000
+niterations = 1000
 ntunerperiod = 100
 
 ###Initial conditions for the ODE (prey and predator populations)
@@ -128,12 +127,12 @@ legend(loc="upper right",fancybox="true")
 ###Plot the histograms of parameter values
 figure("PredatorPrey2")
 for i=1:nparas
-  subplot(230 + i)
-    h = PyPlot.plt[:hist](sub(samples(c),i,:)',20)
-  grid("on")
-  title("Parameter $(parameters(m)[i].key)")
-  xlabel("Values")
-  ylabel("Samples")
+    subplot(230 + i)
+    h = PyPlot.plt[:hist](vec(getindex(samples(c),i,:)),20)
+    grid("on")
+    title("Parameter $(parameters(m)[i].key)")
+    xlabel("Values")
+    ylabel("Samples")
 end
 
 
