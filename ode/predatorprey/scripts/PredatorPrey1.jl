@@ -17,9 +17,9 @@ using PyPlot
 nproposals = 200
 
 #MCMC iteration specifications
-nburnin = 1000
+nburnin = 500
 niterations = 1000
-ntunerperiod = 100
+ntunerperiod = 20
 
 ###Initial conditions for the ODE (prey and predator populations)
 initial = [50.0,5.0]
@@ -47,7 +47,7 @@ println("==========================")
 show(m)
 
 ###Plot the measurement data (simmulated data + noise)
-figure("PredatorPrey1")
+figure(string("PredatorPrey1-",nprocs())) ; clf()
 subplot(221)
 plot(dataindex(m),measurements(m)[:,1];label="Prey")
 plot(dataindex(m),measurements(m)[:,2];label="Predator")
@@ -58,18 +58,22 @@ grid("on")
 legend(loc="upper right",fancybox="true")
 
 ###Create a Metropolis Sampler with normal proposal density
-s = sampler(:mh,:normal,1.0,[0.005,0.08,0.012,0.03,0.006,0.003])
-println("============================")
-println("Sampler defined successfully")
-println("============================")
-show(s)
+s1 = sampler(:mh,:normal,1.0,[0.01,1.0,0.01,1.0,0.01,0.01])
+s2 = sampler(:adaptive,0.01,numparas(m))
+println("=============================")
+println("Samplers defined successfully")
+println("=============================")
+show(s1)
+show(s2)
 
 ###Create a tuner that scales the proposal density
-t = tuner(:scale,ntunerperiod,0.5,:erf)
-println("==========================")
-println("Tuner defined successfully")
-println("==========================")
-show(t)
+t1 = tuner(:scale,ntunerperiod,0.5,:erf)
+t2 = tuner(:monitor,ntunerperiod)
+println("======+====================")
+println("Tuners defined successfully")
+println("=======+===================")
+show(t1)
+show(t2)
 
 ###Create a Generalized Metropolis-Hastings runner (which will default to Standard MH when nproposals=1)
 p = policy(:mh,nproposals;initialize=:default)
@@ -83,21 +87,30 @@ show(r)
 println("=======================")
 println("Run the MCMC simulation")
 println("=======================")
-@time c = run!(r,m,s,t)
+@time c1 = run!(r,m,s1,t1)
+@time c2 = run!(r,m,s2,t2)
 println("==========================")
 println("Completed MCMC simulation")
 println("=========================")
 
 ###Show the results of the simulations
-show(c)
+show(c1)
+show(c2)
 
 nparas = numparas(m)
-meanparamvals = mean(samples(c),2)
-stdparamvals = std(samples(c),2)
+meanparamvals1 = mean(samples(c1),2)
+stdparamvals1 = std(samples(c1),2)
+meanparamvals2 = mean(samples(c2),2)
+stdparamvals2 = std(samples(c2),2)
 
-println("Results of the MCMC simulation:")
+println("Results of the MH MCMC simulation:")
 for i=1:nparas
-    println(" parameter $(parameters(m)[i].key):  mean = ",meanparamvals[i]," std = ",stdparamvals[i])
+    println(" parameter $(parameters(m)[i].key):  mean = ",meanparamvals1[i]," std = ",stdparamvals1[i])
+end
+
+println("Results of the Adaptive MCMC simulation:")
+for i=1:nparas
+    println(" parameter $(parameters(m)[i].key):  mean = ",meanparamvals2[i]," std = ",stdparamvals2[i])
 end
 
 println("================")
@@ -107,17 +120,26 @@ println("================")
 ###Plot the loglikelihood values across samples
 ###After an initial few low values, this should remain relatively high
 subplot(222)
-plot(1:numsamples(c),logposterior(c,m))
-title("Log-Posterior values across samples")
+plot(1:numsamples(c1),logposterior(c1,m))
+title("Normal Metropolis-Hastings")
+xlabel("Samples")
+ylabel("Log-Posterior")
+
+subplot(224)
+plot(1:numsamples(c2),logposterior(c2,m))
+title("Adaptive Metropolis-Hastings")
 xlabel("Samples")
 ylabel("Log-Posterior")
 
 subplot(223)
-modeldata = evaluate!(m,vec(meanparamvals))
+modeldata1 = evaluate!(m,vec(meanparamvals1))
+modeldata2 = evaluate!(m,vec(meanparamvals2))
 plot(dataindex(m),measurements(m)[:,1];label="Prey")
 plot(dataindex(m),measurements(m)[:,2];label="Predator")
-plot(dataindex(m),modeldata[:,1];label="Model Prey")
-plot(dataindex(m),modeldata[:,2];label="Model Predator")
+plot(dataindex(m),modeldata1[:,1];label="MH Prey")
+plot(dataindex(m),modeldata1[:,2];label="MH Predator")
+plot(dataindex(m),modeldata2[:,1];label="AMH Prey")
+plot(dataindex(m),modeldata2[:,2];label="AMH Predator")
 xlabel("Time")
 ylabel("Amplitude")
 title("Predator-Prey model data")
@@ -125,22 +147,22 @@ grid("on")
 legend(loc="upper right",fancybox="true")
 
 ###Plot the histograms of parameter values
-figure("PredatorPrey2")
+figure(string("PredatorPrey-MH-",nprocs())) ; clf()
 for i=1:nparas
     subplot(230 + i)
-    h = PyPlot.plt[:hist](vec(getindex(samples(c),i,:)),20)
+    h = PyPlot.plt[:hist](vec(getindex(samples(c1),i,:)),20)
     grid("on")
     title("Parameter $(parameters(m)[i].key)")
     xlabel("Values")
     ylabel("Samples")
 end
 
-
-
-
-
-
-
-
-
-
+figure(string("PredatorPrey-AMH-",nprocs())) ; clf()
+for i=1:nparas
+    subplot(230 + i)
+    h = PyPlot.plt[:hist](vec(getindex(samples(c2),i,:)),20)
+    grid("on")
+    title("Parameter $(parameters(m)[i].key)")
+    xlabel("Values")
+    ylabel("Samples")
+end

@@ -1,7 +1,7 @@
 ###Target functions
-function sincos!(r::Matrix,t::AbstractVector,paras::Vector)
-    p1 = 2*pi*paras[1]
-    p2 = 2*pi*paras[2]
+function sincos!(r::Matrix,paras::Vector,t::AbstractVector)
+    p1 = 2pi*paras[1]
+    p2 = 2pi*paras[2]
     @simd for i=1:length(t)
         @inbounds r[i,1] = sin(p1*t[i])
     end
@@ -11,21 +11,21 @@ function sincos!(r::Matrix,t::AbstractVector,paras::Vector)
     r
 end
 
-sincos(t::AbstractVector,paras::Vector) = sincos!(zeros(eltype(t),length(t),2),t,paras)
+sincos(paras::Vector,t::AbstractVector) = sincos!(zeros(eltype(t),length(t),2),paras,t)
 
 @inline function _commonsincoscomponents(t::AbstractVector,measurementparas::Vector,variance::Vector,paraminit...)
     modelparameters = parameters([:a,:b],paraminit...)
     noisemodel = noise(:gaussian,variance)
-    measurementdata = data(:array,t,applynoise!(noisemodel,sincos(t,measurementparas)))
+    measurementdata = data(:array,t,applynoise!(noisemodel,sincos(measurementparas,t)))
     modelparameters,measurementdata,noisemodel
 end
 
 ###Create a target function model
 function sincosmodel(t::AbstractVector,measurementparas::Vector,variance::Vector,paraminit...)
-    model(:target,_commonsincoscomponents(t,measurementparas,variance,paraminit...)...,sincos;name="Sine-Cosine Model")
+    model(:target,_commonsincoscomponents(t,measurementparas,variance,paraminit...)...,sincos,t;name="Sine-Cosine Model")
 end
 
 ###Create a target function model
 function sincosmodel!(t::AbstractVector,measurementparas::Vector,variance::Vector,paraminit...)
-    model(:target!,_commonsincoscomponents(t,measurementparas,variance,paraminit...)...,sincos!;name="Sine-Cosine In-Place Model")
+    model(:target!,_commonsincoscomponents(t,measurementparas,variance,paraminit...)...,sincos!,t;name="Sine-Cosine In-Place Model")
 end

@@ -19,7 +19,7 @@ nproposals = 30
 #MCMC iteration specifications
 nburnin = 1000
 niterations = 1000
-ntunerperiod = 100
+ntunerperiod = 50
 
 ###Initial conditions for the ODE (membrane potential and refractory variable)
 initial = [-1.0,1.0]
@@ -46,7 +46,7 @@ println("==========================")
 show(m)
 
 ###Plot the measurement data (simmulated data + noise)
-figure("FitzHughNagumo1")
+figure(string("FitzHughNagumo1-",nprocs())) ; clf()
 subplot(231)
 plot(dataindex(m),measurements(m)[:,1];label="membrane potential")
 plot(dataindex(m),measurements(m)[:,2];label="refractory variable")
@@ -57,7 +57,7 @@ grid("on")
 legend(loc="upper right",fancybox="true")
 
 ###Create a Metropolis sampler with a Normal proposal density
-s = sampler(:mh,:normal,1.0,0.1eye(3))
+s = sampler(:mh,:normal,0.5,ones(3))
 println("============================")
 println("Sampler defined successfully")
 println("============================")
@@ -132,11 +132,3 @@ ylabel("Amplitude")
 title("FitzHugh-Nagumo model data")
 grid("on")
 legend(loc="upper right",fancybox="true")
-
-
-
-
-
-
-
-

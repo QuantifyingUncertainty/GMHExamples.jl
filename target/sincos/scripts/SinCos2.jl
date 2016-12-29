@@ -13,15 +13,12 @@ println("Use addprocs() in the REPL if you want to run on more processes")
 using PyPlot
 
 ###Same as SinCos1.jl, but with an in-place target function
-
-#Standard M-H for nproposals == 1
-#Generalized M-H for nproposals > 1
-nproposals = 50
+nproposals = 30
 
 #MCMC iteration specifications
-nburnin = 1000
+nburnin = 400
 niterations = 1000
-ntunerperiod = 100
+ntunerperiod = 20
 
 #Time points to simulate the sine-cosine model
 timepoints = linspace(0.0,10.0,500)
@@ -49,7 +46,7 @@ println("==========================")
 show(m)
 
 ###Plot the measurement data (simmulated data + noise)
-figure("SinCos2") ; clf()
+figure(string("SinCos2-",nprocs())) ; clf()
 subplot(221)
 plot(dataindex(m),measurements(m)[:,1];label="sine")
 plot(dataindex(m),measurements(m)[:,2];label="cosine")
@@ -60,7 +57,7 @@ grid("on")
 legend(loc="upper right",fancybox="true")
 
 ###Create a Metropolis sampler with a Normal proposal density
-s = sampler(:mh,:normal,1.0,0.1*eye(2))
+s = sampler(:mh,:normal,0.1,ones(2))
 println("============================")
 println("Sampler defined successfully")
 println("============================")

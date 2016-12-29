@@ -14,7 +14,7 @@ using PyPlot
 
 #Standard M-H for nproposals == 1
 #Generalized M-H for nproposals > 1
-nproposals = 10
+nproposals = 20
 
 #MCMC iteration specifications
 nburnin = 200
@@ -51,7 +51,7 @@ println("==========================")
 show(m)
 
 ###Plot the measurement data (simmulated data + noise)
-figure("SpringMass1")
+figure(string("SpringMass1-",nprocs())) ; clf()
 subplot(221)
 plot(dataindex(m),measurements(m)[:,1];label="location")
 plot(dataindex(m),measurements(m)[:,2];label="velocity")
@@ -62,7 +62,7 @@ grid("on")
 legend(loc="upper right",fancybox="true")
 
 ###Create a Metropolis sampler with a Normal proposal density
-s = sampler(:mh,:normal,1.0,0.01eye(2))
+s = sampler(:mh,:normal,0.1,ones(2))
 println("============================")
 println("Sampler defined successfully")
 println("============================")
@@ -145,9 +145,3 @@ subplot(221)
 modeldata = evaluate!(m,vec(meanparamvals))
 plot(dataindex(m),modeldata[:,1];label="model location")
 plot(dataindex(m),modeldata[:,2];label="model velocity")
-
-
-
-
-
-
