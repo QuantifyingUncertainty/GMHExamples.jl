@@ -1,4 +1,4 @@
-The GeneralizedMetropolisHastings.jl package is licensed under the MIT "Expat" License:
+The GMHExamples.jl package is licensed under the MIT "Expat" License:
 
 Copyright (c) 2015: Kris De Meyer, Ben Calderhead.
 
